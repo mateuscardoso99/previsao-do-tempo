@@ -48,14 +48,16 @@
                     <img src="./img/pingo.png">
                     <span id="qtd_chuva"></span>
                 </div>
-                <h3 id="condicao_hoje"></h3>
+                <div class="d-flex align-items-center justify-content-center">
+                    <span id="umidade"></span>
+                </div>
+                <h3 id="condicao_hoje" class="mt-3"></h3>
                 <br>
                 <div id="spinner" class="spinner-border text-primary spinner m-auto" role="status"></div>
             </div>
 
             <div class="text-center">
                 <h2 class="text-success">Próximos dias:</h2>
-                <hr>
                 <div id="proximos_dias"></div>
             </div>
 
@@ -70,12 +72,13 @@
     const contWeatherConditions = {
         "clearsky": 0,
         "cloudy": 0,
+        "partlycloudy": 0,
         "rain": 0,
         "thunder": 0,
         "snow": 0
     }
 
-    const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sabado']
+    const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
     async function getPrevisao(){
         const combobox = document.querySelector('#cidade_box')
@@ -87,6 +90,7 @@
         const temp_hoje = document.querySelector('#temp_hoje')
         const condicao_hoje = document.querySelector('#condicao_hoje')
         const qtd_chuva_hoje = document.querySelector('#qtd_chuva')
+        const umidade_ar = document.querySelector('#umidade')
         const img_hoje = document.querySelector('#img_hoje')
 
         proximos_dias.innerHTML = ''
@@ -94,7 +98,7 @@
         temp_hoje.innerHTML = ''
         condicao_hoje.innerHTML = ''
         qtd_chuva_hoje.innerHTML = ''
-
+        umidade_ar.innerHTML = ''
 
         try{
             const request = await fetch('https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=-29.68417&lon=-53.80694')
@@ -126,8 +130,12 @@
             separar_by_days[0].forEach(item => {
                 qtd_chuva += item.data.next_1_hours.details.precipitation_amount
 
-                if(item.data.next_1_hours.summary.symbol_code.includes("clearsky")){
+                if(item.data.next_1_hours.summary.symbol_code.includes("clearsky")
+                    || item.data.next_1_hours.summary.symbol_code.includes("fair")){
                     contWeatherConditions.clearsky++
+                }
+                else if(item.data.next_1_hours.summary.symbol_code.includes("partlycloudy")){
+                    contWeatherConditions.partlycloudy++
                 }
                 else if(item.data.next_1_hours.summary.symbol_code.includes("cloudy")){
                     contWeatherConditions.cloudy++
@@ -146,6 +154,7 @@
 
             qtd_chuva_hoje.innerHTML = `${qtd_chuva.toFixed(1)}mm`
             temp_hoje.innerHTML = `${Math.round(separar_by_days[0][0].data.instant.details.air_temperature)}°`
+            umidade_ar.innerHTML = `Umidade do ar: ${Math.round(separar_by_days[0][0].data.instant.details.relative_humidity)}%`
             data_hoje.innerHTML = `${new Date(separar_by_days[0][0].time).toLocaleDateString()}`
 
             let maxOcorrencias = "clearsky"
@@ -161,6 +170,10 @@
             if(maxOcorrencias == "clearsky"){
                 img_hoje.src = "./img/sol.png"
                 condicao_hoje.innerHTML = "Ensolarado"
+            }
+            else if(maxOcorrencias == "partlycloudy"){
+                img_hoje.src = "./img/nublado-sol.png"
+                condicao_hoje.innerHTML = "Nublado com aberturas de sol"
             }
             else if(maxOcorrencias == "cloudy"){
                 img_hoje.src = "./img/nublado.png"
@@ -187,6 +200,7 @@
             for(dados of separar_by_days){
             
                 contWeatherConditions.clearsky = 0
+                contWeatherConditions.partlycloudy = 0
                 contWeatherConditions.cloudy = 0
                 contWeatherConditions.rain = 0
                 contWeatherConditions.thunder = 0
@@ -216,8 +230,12 @@
                         maxTemp = info.data.instant.details.air_temperature
 
                     if(info.data.next_1_hours){
-                        if(info.data.next_1_hours.summary.symbol_code.includes("clearsky")){
+                        if(info.data.next_1_hours.summary.symbol_code.includes("clearsky")
+                            || info.data.next_1_hours.summary.symbol_code.includes("fair")){
                             contWeatherConditions.clearsky++
+                        }
+                        else if(info.data.next_1_hours.summary.symbol_code.includes("partlycloudy")){
+                            contWeatherConditions.partlycloudy++
                         }
                         else if(info.data.next_1_hours.summary.symbol_code.includes("cloudy")){
                             contWeatherConditions.cloudy++
@@ -237,6 +255,9 @@
                         if(info.data.next_6_hours.summary.symbol_code.includes("clearsky") 
                             || info.data.next_6_hours.summary.symbol_code.includes("fair")){
                             contWeatherConditions.clearsky++
+                        }
+                        else if(info.data.next_6_hours.summary.symbol_code.includes("partlycloudy")){
+                            contWeatherConditions.partlycloudy++
                         }
                         else if(info.data.next_6_hours.summary.symbol_code.includes("cloudy")){
                             contWeatherConditions.cloudy++
@@ -273,6 +294,9 @@
                 if(max != 0 && maxOcorrencias == "clearsky"){
                     img.src = "./img/sol.png"
                 }
+                else if(maxOcorrencias == "partlycloudy"){
+                    img.src = "./img/nublado-sol.png"
+                }
                 else if(maxOcorrencias == "cloudy"){
                     img.src = "./img/nublado.png"
                 }
@@ -289,9 +313,10 @@
                 dataDia = new Date(dataDia)
 
                 if(max != 0){
+                    row.innerHTML += '<hr>'
                     row.innerHTML += `<h4>${days[dataDia.getDay()]}  - ${dataDia.toLocaleDateString()}</h4>`
                     row.appendChild(img)
-                    row.innerHTML += `<p>
+                    row.innerHTML += `<p class='fs-5'>
                                         <span class='text-dark'>${Math.round(maxTemp)}°</span>
                                         <span class='text-secondary'>${Math.round(minTemp)}°</span>
                                     </p>`
@@ -299,7 +324,6 @@
                                         <img src="./img/pingo.png">
                                         <span id='qtd_chuva'>${qtd_chuva.toFixed(1)}mm</span>
                                     </div>`
-                    row.innerHTML += '<hr>'
 
                     proximos_dias.appendChild(row)
                 }
